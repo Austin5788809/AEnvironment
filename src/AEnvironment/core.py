@@ -4,6 +4,8 @@ from collections import deque
 import copy
 import random
 
+__zero = torch.tensor(0) # 占位符，用于函数返回
+
 class Env:
     '''
     环境基类
@@ -24,30 +26,29 @@ class Env:
         使环境重置到初始状态
         返回state，类型为tensor，dtype=torch.float32
         '''
+        return __zero
 
     def legal_action(self) -> torch.Tensor:
         '''
         返回所有可用动作的掩码，类型为torch.bool
         '''
+        return __zero
 
-    def step(self, action:torch.Tensor) -> list[torch.Tensor,
-                                                torch.Tensor,
-                                                torch.Tensor,
-                                                torch.Tensor,
-                                                torch.Tensor]:
+    def step(self, action:torch.Tensor) -> list[torch.Tensor]:
         '''
         返回一个list，包含五个tensor，分别代表state、action、reward、state'、done
         这些tensor的类型分别应是torch.float32、torch.long、torch.float32、torch.float32、torch.long
         其中action、reward、done是单元素tensor
         done为0时代表未结束，-1代表负，1代表胜
         '''
+        return [__zero, __zero, __zero, __zero, __zero]
 
 class __Trainer_base:
     '''
     训练器
     构造时传入需要训练的模型，自动训练
     '''
-    def __init__(self, module:torch.nn.Module, optim:torch.optim.Optimizer, env:Env, device=torch.device("cpu"), batch_size=128):
+    def __init__(self, module:torch.nn.Module, optim:torch.optim.Optimizer, env:Env, batch_size=128, device=torch.device("cpu")):
         self.module = module
         self.optim = optim
         self.env = env
@@ -62,7 +63,7 @@ class __Trainer_base:
         '''
 
 class Trainer_DQN(__Trainer_base):
-    def __init__(self, module, optim, env, gamma, D_maxlen=10000):
+    def __init__(self, module, optim, env, gamma, batch_size=128, D_maxlen=10000):
         super().__init__(module, optim, env, batch_size)
         self.gamma = gamma
         self.D = deque(maxlen=D_maxlen)
