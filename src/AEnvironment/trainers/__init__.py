@@ -1,0 +1,2 @@
+from TrainerDQN import TrainerDQN
+from TrainerDoubleDQN import TrainerDoubleDQN
