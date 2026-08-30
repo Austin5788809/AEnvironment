@@ -1,4 +1,5 @@
-from AEnvironment.utils.utils import *
+import torch
+import pygame
 from collections import deque
 import copy
 import random
@@ -75,6 +76,7 @@ class Env(ABC):
     @abstractmethod
     def _transition(self, action: torch.Tensor, state: torch.Tensor) -> list[torch.Tensor]:
         '''
+        参数action是一个0维tensor，表示pred的argmax结果，类型是torch.long
         用户需要实现这个函数，而不是step，这个函数需要根据当前状态和动作返回[s, a, r, s', done]五个tensor
         这些tensor的类型分别应是torch.float32、torch.long、torch.float32、torch.float32、torch.long
         其中action、reward、done是单元素tensor
@@ -114,7 +116,6 @@ class Env(ABC):
         '''
         action = torch.as_tensor(action, dtype=torch.long)
         if state is None: state = self.state
-
         assert isinstance(state, torch.Tensor)
         pack = self._transition(action, state)
         if state is None: self.state = pack[3] # 当参数state有值时我不希望修改原环境，此时相当于直接调用_transition

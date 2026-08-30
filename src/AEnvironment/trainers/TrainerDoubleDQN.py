@@ -1,4 +1,4 @@
-from core import _TrainerBase
+from AEnvironment.core import _TrainerBase
 from collections import deque
 import torch
 import copy
@@ -17,7 +17,7 @@ class TrainerDoubleDQN(_TrainerBase):
         self.update_step = update_step
         self.MSEloss = torch.nn.MSELoss()
 
-    def __call__(self, eps:float, do_render=False) -> Iterator[tuple[int, float, int]]:
+    def __call__(self, eps:float, do_render=False) -> tuple[int, float, int]:
         self.env.render_mode(do_render)
         self.env.render()
         state = self.env.reset().to(self.device) # 重启，并获取当前状态
@@ -40,7 +40,7 @@ class TrainerDoubleDQN(_TrainerBase):
             if len(self.D) >= self.batch_size: # 当经验池大小足够时，开始训练
                 batch_list = random.sample(self.D, self.batch_size) # 随机取出batch_size条经验
                 s = torch.stack([exp[0] for exp in batch_list]).to(self.device)
-                a = torch.stack([exp[1] for exp in batch_list]).to(self.device)
+                a = torch.stack([exp[1].reshape(-1) for exp in batch_list]).to(self.device)
                 r = torch.stack([exp[2] for exp in batch_list]).to(self.device)
                 sn = torch.stack([exp[3] for exp in batch_list]).to(self.device)
                 d = torch.stack([exp[4] for exp in batch_list]).to(self.device)
@@ -64,5 +64,4 @@ class TrainerDoubleDQN(_TrainerBase):
             s_reward += reward.item()
             self.env.render()
             if done.item() != 0:
-                yield steps, s_reward, int(done.item())
-                break
+                return steps, s_reward, int(done.item())

@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: AEnvironment
+Version: 0.0.1
+Summary: xxx
+Requires-Python: >=3.10
+Requires-Dist: torch
+Requires-Dist: pygame
