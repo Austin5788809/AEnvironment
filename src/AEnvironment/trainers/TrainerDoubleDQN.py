@@ -3,7 +3,7 @@ from collections import deque
 import torch
 import copy
 import random
-from typing import Iterator
+from typing import Iterator#aba
 class TrainerDoubleDQN(_TrainerBase):
     '''
     与DQN相似，但Q_target(s', best_a')的best_a'用主网络选取而不是目标网络
