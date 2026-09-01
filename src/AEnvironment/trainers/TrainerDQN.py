@@ -42,25 +42,25 @@ class TrainerDQN(_TrainerBase):
             else:
                 pred = self.model(state.unsqueeze(0)).squeeze(0).to(self.device) # 获取模型预测的所有q值
                 pred = pred.masked_fill(~legal_actions, -float('inf')) # 把不可用动作的q值变成-inf
-                action = pred.argmax().to(self.device) # type:torch.Tensor
+                action = pred.argmax() # type:torch.Tensor
             pack = self.env.step(action) # 获取step返回的五元组
             self.D.append(pack)
             _, _, reward, state, done = pack # 解包，顺便更新state，此时state存的是下一个状态，而不是当前状态
-            state.to(self.device)
+            state = state.to(self.device)
             
             if len(self.D) >= self.batch_size: # 当经验池大小足够时，开始训练
                 batch_list = random.sample(self.D, self.batch_size) # 随机取出batch_size条经验
                 s = torch.stack([exp[0] for exp in batch_list]).to(self.device)
-                a = torch.stack([exp[1].reshape(-1) for exp in batch_list]).to(self.device)
+                a = torch.stack([exp[1].reshape(-1) for exp in batch_list]).squeeze(-1).to(self.device)
                 r = torch.stack([exp[2] for exp in batch_list]).to(self.device)
                 sn = torch.stack([exp[3] for exp in batch_list]).to(self.device)
                 d = torch.stack([exp[4] for exp in batch_list]).to(self.device)
 
                 pred = self.model(s) # type: torch.Tensor
-                Q = pred.gather(1, a).squeeze(1)  # a 的形状是 [batch, 1]
+                Q = pred.gather(1, a.unsqueeze(1)).squeeze(1)  # a 的形状是 [batch]，需要unsqueeze
                 with torch.no_grad():
                     pred_tgt_n = self.target(sn) # type: torch.Tensor
-                    Q_tgt_n, _ = pred_tgt_n.max(1, keepdim=False)
+                    Q_tgt_n = pred_tgt_n.max(1, keepdim=False)[0]  # 只取值，不要索引
                     Q_tgt = r + self.gamma * Q_tgt_n * (1.0 - (d != 0).float())
                 loss = self.MSEloss(Q, Q_tgt)
                 self.optim.zero_grad()
@@ -71,7 +71,7 @@ class TrainerDQN(_TrainerBase):
                 self.target.load_state_dict(self.model.state_dict())
             steps += 1
             self.total_steps += 1
-            s_reward += reward.item()
+            s_reward += float(reward)
             self.env.render()
-            if done.item() != 0:
-                return steps, s_reward, int(done.item())
+            if int(done) != 0:
+                return steps, s_reward, int(done)

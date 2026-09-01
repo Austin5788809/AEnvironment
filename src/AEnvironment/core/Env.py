@@ -96,6 +96,8 @@ class Env(ABC):
             '''
             self.do_render = do_render
             if do_render:
+                pygame.init()
+                pygame.font.init()
                 if self.screen is None:
                     pygame.display.init()
                     self.screen = pygame.display.set_mode(self.screen_size)
@@ -118,5 +120,16 @@ class Env(ABC):
         if state is None: state = self.state
         assert isinstance(state, torch.Tensor)
         pack = self._transition(action, state)
+        if len(pack) != 5:
+            raise ValueError(f"Environment step must return 5 values [state, action, reward, next_state, done], got {len(pack)}")
+
+        s, a, reward, next_state, done = pack
+        pack = [
+            torch.as_tensor(s, dtype=torch.float32),
+            torch.as_tensor(a, dtype=torch.long),
+            torch.as_tensor(reward, dtype=torch.float32),
+            torch.as_tensor(next_state, dtype=torch.float32),
+            torch.as_tensor(done, dtype=torch.long),
+        ]
         if state is None: self.state = pack[3] # 当参数state有值时我不希望修改原环境，此时相当于直接调用_transition
         return pack
